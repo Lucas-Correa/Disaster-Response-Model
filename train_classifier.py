@@ -20,8 +20,8 @@ from sklearn.model_selection import GridSearchCV
 from sklearn.metrics import classification_report
 
 def load_data(database_filepath):
-    engine = create_engine('sqlite:///F8MessegesCat.db')
-    df = pd.read_sql_table('MgsCat',engine)
+    engine = create_engine('sqlite:///'+database_filepath)
+    df = pd.read_sql_table('MenssagesCategories',engine)
 
     X = df.message.values
     y = df.drop(['message','genre','related','id','original'],axis=1)
@@ -77,7 +77,7 @@ def evaluate_model(model, X_test, Y_test, category_names):
 def save_model(model, model_filepath):
 
     with open(model_filepath + 'model.pickle', 'wb') as f:
-    pickle.dump(model, f)
+        pickle.dump(model, f)
 
 
 def main():

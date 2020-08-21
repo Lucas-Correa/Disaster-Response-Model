@@ -4,11 +4,12 @@ from sqlalchemy import create_engine
 
 def load_data(messages_filepath, categories_filepath):
 
-    messages = pd.read_csv('messages.csv')
-    categories = pd.read_csv('categories.csv')
+    messages = pd.read_csv(messages_filepath)
+    categories = pd.read_csv(categories_filepath)
     df = categories.merge(messages,left_on='id',right_on='id')
 
     categories = categories.categories.str.split(';',expand=True)
+    row = categories.loc[0]
     category_colnames = list(row.apply(lambda x : x[:-2]))
     categories.columns = category_colnames
 
@@ -33,10 +34,12 @@ def clean_data(df):
     to_drop = df[df.iloc[: , 4:].isnull().all(axis=1)].index
     df.drop(to_drop,inplace=True)
 
+    return df
+
 def save_data(df, database_filename):
 
-    engine = create_engine('sqlite:///F8MessegesCat.db')
-    df.to_sql('MgsCat', engine, index=False)
+    engine = create_engine('sqlite:///'+database_filename)
+    df.to_sql('MenssagesCategories', engine, index=False)
 
 
 def main():
