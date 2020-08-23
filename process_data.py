@@ -8,7 +8,7 @@ def load_data(messages_filepath, categories_filepath):
     categories = pd.read_csv(categories_filepath)
     df = categories.merge(messages,left_on='id',right_on='id')
 
-    categories = categories.categories.str.split(';',expand=True)
+    categories = df.categories.str.split(';',expand=True)
     row = categories.loc[0]
     category_colnames = list(row.apply(lambda x : x[:-2]))
     categories.columns = category_colnames
