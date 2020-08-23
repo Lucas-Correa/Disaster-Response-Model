@@ -1,21 +1,21 @@
 import sys
 import nltk
-nltk.download(['punkt', 'wordnet'])
+nltk.download(['punkt', 'wordnet','stopwords'])
 
 import pandas as pd
 import re
 import pickle
-
 from sqlalchemy import create_engine
-from nltk.tokenize import word_tokenize
-from sklearn.feature_extraction.text import CountVectorizer, TfidfTransformer
-from nltk.tokenize import word_tokenize
-from nltk.stem import WordNetLemmatizer
 
+from nltk.tokenize import word_tokenize
+from nltk.corpus import stopwords
+from nltk.stem import WordNetLemmatizer
+from sklearn.feature_extraction.text import CountVectorizer, TfidfTransformer
+
+from sklearn.model_selection import train_test_split
+from sklearn.pipeline import Pipeline
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.multioutput import MultiOutputClassifier
-from sklearn.pipeline import Pipeline
-from sklearn.model_selection import train_test_split
 from sklearn.model_selection import GridSearchCV
 from sklearn.metrics import classification_report
 
@@ -36,14 +36,18 @@ def tokenize(text):
     for url in detected_urls:
         text = text.replace(url, "urlplaceholder")
 
+    text = re.sub(r'[^\w\s]','',text)
+
     tokens = word_tokenize(text)
     lemmatizer = WordNetLemmatizer()
 
     clean_tokens = []
     for tok in tokens:
-        clean_tok = lemmatizer.lemmatize(tok).lower().strip()
-        clean_tokens.append(clean_tok)
-
+        if tok not in stopwords.words('english'):
+            clean_tok = lemmatizer.lemmatize(tok).lower().strip()
+            clean_tokens.append(clean_tok)
+        else:
+            pass
     return clean_tokens
 
 
@@ -83,6 +87,7 @@ def save_model(model, model_filepath):
 def main():
     if len(sys.argv) == 3:
         database_filepath, model_filepath = sys.argv[1:]
+
         print('Loading data...\n    DATABASE: {}'.format(database_filepath))
         X, Y, category_names = load_data(database_filepath)
         X_train, X_test, Y_train, Y_test = train_test_split(X, Y, test_size=0.2)
