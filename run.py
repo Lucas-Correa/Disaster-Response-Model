@@ -1,9 +1,15 @@
 import json
 import plotly
 import pandas as pd
+import re
+
+#import nltk
+#nltk.download('stopwords')
 
 from nltk.stem import WordNetLemmatizer
 from nltk.tokenize import word_tokenize
+from nltk.corpus import stopwords
+from sklearn.feature_extraction.text import CountVectorizer
 
 from flask import Flask
 from flask import render_template, request, jsonify
@@ -15,23 +21,31 @@ from sqlalchemy import create_engine
 app = Flask(__name__)
 
 def tokenize(text):
+
+    text = re.sub(r'[^\w\s]',' ',text)
+
     tokens = word_tokenize(text)
     lemmatizer = WordNetLemmatizer()
 
     clean_tokens = []
     for tok in tokens:
-        clean_tok = lemmatizer.lemmatize(tok).lower().strip()
-        clean_tokens.append(clean_tok)
-
+        if tok not in stopwords.words('english'):
+            clean_tok = lemmatizer.lemmatize(tok).lower().strip()
+            clean_tokens.append(clean_tok)
+        else:
+            pass
     return clean_tokens
 
 # load data
-engine = create_engine('sqlite:///../data/YourDatabaseName.db')
-df = pd.read_sql_table('YourTableName', engine)
+engine = create_engine('sqlite:///../data/DisasterResponse.db')
+df = pd.read_sql_table('MenssagesCategories', engine)
 
 # load model
-model = joblib.load("../models/your_model_name.pkl")
+model = joblib.load("../models/classifier.pkl")
 
+# get words
+vect = CountVectorizer(tokenizer=tokenize)
+x = vect.fit_transform(df.message)
 
 # index webpage displays cool visuals and receives user input text for model
 @app.route('/')
@@ -43,6 +57,18 @@ def index():
     genre_counts = df.groupby('genre').count()['message']
     genre_names = list(genre_counts.index)
     
+    most_needed_support_counts = df.iloc[:,4:].sum().sort_values(ascending=False).values
+    most_needed_support_names = df.iloc[:,4:].sum().sort_values(ascending=False).index
+    
+ 
+    n_words = 10
+    words_counts = dict(zip(vect.get_feature_names(), x.sum(0).flat))
+    words = sorted(words_counts, key=words_counts.get, reverse=True)[:n_words]
+    word_counts = []
+    
+    for w in words:
+        word_counts.append(words_counts.get(w))
+        
     # create visuals
     # TODO: Below is an example - modify to create your own visuals
     graphs = [
@@ -61,6 +87,45 @@ def index():
                 },
                 'xaxis': {
                     'title': "Genre"
+                }
+            }
+        },
+        # Most needed support
+        {
+            'data': [
+                Bar(
+                    x=most_needed_support_names,
+                    y=most_needed_support_counts
+                )
+            ],
+
+            'layout': {
+                'title': 'Most needed supports',
+                'yaxis': {
+                    'title': "Count"
+                },
+                'xaxis': {
+                    'title': "Support"
+                }
+            }
+        },
+        
+        # Most appeared words
+        {
+            'data': [
+                Bar(
+                    x=words,
+                    y=word_counts
+                )
+            ],
+
+            'layout': {
+                'title': 'Most appeared words',
+                'yaxis': {
+                    'title': "Count"
+                },
+                'xaxis': {
+                    'title': "words"
                 }
             }
         }
