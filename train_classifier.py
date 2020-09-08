@@ -118,7 +118,7 @@ def tokenize(text):
         tok_no_ponct = re.sub(r'[^\w\s]','',tok[0])
         normalized_tok = lemmatizer.lemmatize(tok_no_ponct).lower().strip()
 
-        if (normalized_tok not in stopwords_dict) & (tok[1] not in ['CD','SYM','UH','LS']) & (normalized_tok != ''):
+        if (normalized_tok not in stopwords_dict) & (tok[1] not in ['CD','SYM','UH','LS','FW']) & (normalized_tok != ''):
             clean_tokens.append(normalized_tok)
         else:
             pass
@@ -128,8 +128,8 @@ def tokenize(text):
 
 def build_model():
     '''
-        The build_model funcition creates a pipeline for the model and optimize it
-        in a GridSearch funcition.
+        The build_model funcition creates a pipeline for the model and optimize
+        it with GridSearch.
 
         INPUT:
 
@@ -161,14 +161,14 @@ def build_model():
     parameters = {
     'features__text_features__vect__ngram_range': ((1, 1),(2,2)),
     #'features__text_features__vect__max_df': (0.5, 0.75),
-    'features__text_features__vect__max_features': (None, 5000),
+    #'features__text_features__vect__max_features': (None, 5000),
     #'clf__estimator__n_estimators': [50, 100, 200],
     #'clf__estimator__min_samples_split': [2, 3, 4],
     }
 
     cv =  GridSearchCV(pipeline, param_grid=parameters)
 
-    return cv
+    return pipeline
 
 def evaluate_model(model, X_test, Y_test, category_names):
     '''
@@ -187,6 +187,8 @@ def evaluate_model(model, X_test, Y_test, category_names):
     '''
 
     y_pred = model.predict(X_test)
+    print(y_pred)
+    print(Y_test)
     print(classification_report(Y_test, y_pred, target_names=category_names))
 
     print('Best Parameters:{}'.format(model.best_params_))
