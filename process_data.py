@@ -3,10 +3,40 @@ import pandas as pd
 from sqlalchemy import create_engine
 
 def load_data(messages_filepath, categories_filepath):
+    '''
+        The load_data funcition recieve the filepath's of the messages
+        and categories dataset, respectively, load the files and merge the in
+        a single dataframe
+
+        INPUT:
+        messages_filepath = string with filepath of messages data
+        categories_filepath = string with filepath of categories data
+
+        OUTPUT:
+        df = dataframe with merged datasets
+    '''
 
     messages = pd.read_csv(messages_filepath)
+
     categories = pd.read_csv(categories_filepath)
+
     df = categories.merge(messages,left_on='id',right_on='id')
+
+    return df
+
+
+def clean_data(df):
+    '''
+        The clean_data funcition recieve a dataframe and expand the categorical
+        columns into separeted columns, drop duplicates and drop rows that have
+        nan for all categorical columns.
+
+        INPUT:
+        df = dataframe with merged datasets
+
+        OUTPUT:
+        df = cleaned dataframe
+    '''
 
     categories = df.categories.str.split(';',expand=True)
     row = categories.loc[0]
@@ -23,11 +53,6 @@ def load_data(messages_filepath, categories_filepath):
     df.drop('categories',axis=1,inplace=True)
     df = pd.concat([df,categories],axis=1)
 
-    return df
-
-
-def clean_data(df):
-
     df.drop_duplicates(inplace=True)
 
     #rows that have nan for all categorical columns
@@ -37,6 +62,17 @@ def clean_data(df):
     return df
 
 def save_data(df, database_filename):
+    '''
+        The save_data funcition saves the given dataframe in a sqlite base with
+        a table called MenssagesCategories.
+
+        INPUT:
+        df = dataframe to be transformed in sqlite base
+        database_filename = path with file name to be saved
+
+        OUTPUT:
+
+    '''
 
     engine = create_engine('sqlite:///'+database_filename)
     df.to_sql('MenssagesCategories', engine, index=False)
