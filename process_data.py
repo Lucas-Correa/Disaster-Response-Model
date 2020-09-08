@@ -59,11 +59,7 @@ def clean_data(df):
     to_drop = df[df.iloc[: , 4:].isnull().all(axis=1)].index
     df.drop(to_drop,inplace=True)
 
-    df.replace({'related': 2}, 0,inplace=True)
-    df.drop('child_alone',axis=1,inplace=True)
-    
     return df
-
 
 def save_data(df, database_filename):
     '''
@@ -75,6 +71,7 @@ def save_data(df, database_filename):
         database_filename = path with file name to be saved
 
         OUTPUT:
+
     '''
 
     engine = create_engine('sqlite:///'+database_filename)
