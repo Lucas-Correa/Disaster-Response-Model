@@ -10,8 +10,7 @@
   disaster categories in the dataset. Creating a Machine Learning model that could process text and redirect to the right organization is one of the many applications
   where Natural Language Processing could be helpfull. 
   
-  In this project I used a ETL process to load the data and clean it, a NLP pipeline to build a classification model and report the results for the 36 categories and
-  used Udacity's web based flask app model to add 2 more vizualizations of the data gether in a flask app.
+  In this project I used a ETL process to load the data and clean it, a NLP pipeline to build a classification model and report the results for the 36 categories and used Udacity's web based flask app model to add 2 more vizualizations of the data gether in a flask app.
   
 ### 3. File Descriptions
   The process_data.py runs the ETL pipeline that will clean the data and the rain_classifier.py will run the Machine Learn pipeline that uses Natural Languague Process 
@@ -24,4 +23,4 @@
   Afterwards, run the train_classifier.py. Please add the filepath of the sqlite base to be used and the file path of the pickle file that will store the model.
   
 ### 5. Licensing, Authors, Acknowledgements, etc.
-  This project was design entirly by me.
+  The dataset belongs to the [Figure Eight](https://appen.com/).
