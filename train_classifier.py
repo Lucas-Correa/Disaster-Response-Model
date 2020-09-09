@@ -4,6 +4,8 @@ import pandas as pd
 import re
 import pickle
 
+from joblib import parallel_backend
+
 from sqlalchemy import create_engine
 
 from collections import Counter
@@ -19,12 +21,14 @@ from nltk.stem import WordNetLemmatizer
 from sklearn.feature_extraction.text import CountVectorizer, TfidfTransformer
 from sklearn.preprocessing import OneHotEncoder
 from sklearn.model_selection import train_test_split,GridSearchCV
+from sklearn.feature_selection import SelectPercentile,chi2
 from sklearn.pipeline import Pipeline
 from sklearn.compose import ColumnTransformer
 from sklearn.multioutput import MultiOutputClassifier
 from sklearn.metrics import classification_report
-from sklearn.ensemble import RandomForestClassifier
-from sklearn.tree import DecisionTreeClassifier
+#from sklearn.tree import DecisionTreeClassifier
+from sklearn.naive_bayes import BernoulliNB
+from sklearn.ensemble import AdaBoostClassifier
 
 def load_data(database_filepath):
     '''
@@ -50,7 +54,7 @@ def load_data(database_filepath):
 
 def ne_removal(text):
     '''
-        The ne_removal funcition recieve a text corpus, tokenize it, set parts of
+        The ne_removal funcition recieves a text corpus, tokenize it, set parts of
         speach and name entities. Then, remove the name entities from the
         tokenize text.
 
@@ -95,6 +99,12 @@ def tokenize(text):
     '''
         The tokenize funcition recieve a text and process it by removing
         ponctuation/stopwords, sorting out tokens, normalizing it and lemmatizing.
+        Excluded tokens that were in the following parts of speach:
+        CD: cardinal numbers
+        SYM: symbols
+        UH: interjection
+        LS: list marker
+        FW: foreign words
 
         INPUT:
         text = string with text
@@ -118,7 +128,7 @@ def tokenize(text):
         tok_no_ponct = re.sub(r'[^\w\s]','',tok[0])
         normalized_tok = lemmatizer.lemmatize(tok_no_ponct).lower().strip()
 
-        if (normalized_tok not in stopwords_dict) & (tok[1] not in ['CD','SYM','UH','LS']) & (normalized_tok != ''):
+        if (normalized_tok not in stopwords_dict) & (tok[1] not in ['CD','SYM','UH','LS','FW']) & (normalized_tok != ''):
             clean_tokens.append(normalized_tok)
         else:
             pass
@@ -128,8 +138,8 @@ def tokenize(text):
 
 def build_model():
     '''
-        The build_model funcition creates a pipeline for the model and optimize it
-        in a GridSearch funcition.
+        The build_model funcition creates a pipeline for the model and optimize
+        it with GridSearch.
 
         INPUT:
 
@@ -155,18 +165,18 @@ def build_model():
 
     pipeline = Pipeline([
                 ('features', preprocessor),
-                ('clf', MultiOutputClassifier(DecisionTreeClassifier()) )
+                #('feature_selection',SelectPercentile(chi2)),
+                ('clf', MultiOutputClassifier(AdaBoostClassifier()) )
                 ])
 
     parameters = {
-    'features__text_features__vect__ngram_range': ((1, 1),(2,2)),
-    #'features__text_features__vect__max_df': (0.5, 0.75),
-    'features__text_features__vect__max_features': (None, 5000),
-    #'clf__estimator__n_estimators': [50, 100, 200],
+    #'features__text_features__vect__max_df': (0.5, 0.75,1),
+    #'clf__estimator__n_estimators': [50, 200],
+    #'feature_selection__percentile': [10, 100]
     #'clf__estimator__min_samples_split': [2, 3, 4],
     }
 
-    cv =  GridSearchCV(pipeline, param_grid=parameters)
+    cv =  GridSearchCV(pipeline, param_grid=parameters,verbose=10)#,n_jobs=-1)
 
     return cv
 
@@ -187,10 +197,13 @@ def evaluate_model(model, X_test, Y_test, category_names):
     '''
 
     y_pred = model.predict(X_test)
-    print(classification_report(Y_test, y_pred, target_names=category_names))
 
-    print('Best Parameters:{}'.format(model.best_params_))
+    print(classification_report(Y_test, y_pred, target_names=category_names,zero_division=1))
 
+    try:
+        print('Best Parameters:{}'.format(model.best_params_))
+    except:
+        pass
 
 def save_model(model, model_filepath):
     '''
